@@ -37,7 +37,7 @@ namespace MyPrroj
         //Поиск процессов и модулей
         private void Run_Procces(object sender, RoutedEventArgs e)
         {
-            new Thread(() => {  
+              
                 while (true)
             {
                     Thread.Sleep(1000);
@@ -69,7 +69,7 @@ namespace MyPrroj
                     return;
                 }
             }
-            });
+           
         }
            
 
