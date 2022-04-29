@@ -5,9 +5,9 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:MyPrroj"
         mc:Ignorable="d"
-        Title="MainWindow" Height="300" Width="400" Activated="ESP_Proj">
+        Title="MainWindow" Height="300" Width="400">
     <Grid Background="LightGray">
-        <Button x:Name="btnRun" Content="Run" Width="100" Height="50" HorizontalAlignment="Center" Click="Run_Procces" Background="White"/>
-        <CheckBox x:Name="chEsp" Content="ESP" HorizontalAlignment="Center" Margin="50" VerticalAlignment="Bottom" IsChecked="False"/>
+        <Button x:Name="btnRun" Content="Enable" Width="100" Height="50" HorizontalAlignment="Center" Click="Run_Procces" Background="White"/>
+        <Button x:Name="btnReturn" Content="Disable" Width="100" Height="50" HorizontalAlignment="Stretch" VerticalAlignment="Bottom" Click="btnReturn_Click" Background="White" Margin="40"/>
     </Grid>
 </Window>
