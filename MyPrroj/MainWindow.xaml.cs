@@ -19,13 +19,14 @@ namespace MyPrroj
         private bool flag;
         private Memory m;
         private int myClient;
+        private int myEngine;
         public MainWindow()
         {
             InitializeComponent();
             Hex(Parse(Url));
         }
 
-        //Поиск процессов и модулей
+        //Поиск процессов и модулей, начальная точка входа в бесконечный цикл
         private void Run_Procces(object sender, RoutedEventArgs e)
         {
                 try
@@ -40,7 +41,11 @@ namespace MyPrroj
                         {
                             myClient = (int)item.BaseAddress;
                         }
-                    }
+                        if (item.ModuleName == "engine.dll")
+                        {
+                            myEngine = (int)item.BaseAddress;
+                        }
+                }
                         if (myClient != 0) 
                         {
                             flag = true;
@@ -52,8 +57,28 @@ namespace MyPrroj
                     MessageBox.Show("No process found.");
                     return;
                 }
-        }    
-        private void Esp() 
+        }
+
+
+        #region State 
+        private int GetBase() 
+        {
+            return m.Read<int>(myEngine + Offsets.dwClientState);
+        }
+        EState State() 
+        {
+            int state = m.Read<int>(GetBase() + Offsets.dwClientState_State);
+            if (state <= (int)EState.Invalid || state >= (int)EState.InvalidLast) 
+            {
+                return EState.Invalid;
+            }
+            return (EState)state;
+        }
+        #endregion State 
+
+
+
+        private void Esp() // Отрисовка объектов
         {
             new Thread(() =>
             {
@@ -62,6 +87,10 @@ namespace MyPrroj
                     while (true)
                     {
                         Thread.Sleep(1);
+                        if (State() != EState.InGame) 
+                        {
+                            continue;
+                        }
                         int lPlayer = m.Read<int>(myClient + Offsets.dwLocalPlayer);
                         int playrTeam = m.Read<int>(lPlayer + Offsets.m_iTeamNum);
                         int glow = m.Read<int>(myClient + Offsets.dwGlowObjectManager);
@@ -88,12 +117,14 @@ namespace MyPrroj
                     }
                 }
             }).Start();
-        }
-        //
+        } 
+
+        //Отключение Esp
         private void btnReturn_Click(object sender, RoutedEventArgs e)
         {
             flag = false;
         }
+
 
         #region Offsets
         struct Offsets 
@@ -103,6 +134,8 @@ namespace MyPrroj
             public static Int32 dwGlowObjectManager;
             public static Int32 dwEntityList;
             public static Int32 m_iGlowIndex;
+            public static Int32 dwClientState;
+            public static Int32 dwClientState_State;
         }
         private void Hex(Dictionary<string, string> dic) 
         {
@@ -111,7 +144,9 @@ namespace MyPrroj
             Offsets.dwGlowObjectManager = Convert.ToInt32(dic["dwGlowObjectManager"], 16);
             Offsets.m_iGlowIndex = Convert.ToInt32(dic["m_iGlowIndex"], 16);
             Offsets.m_iTeamNum = Convert.ToInt32(dic["m_iTeamNum"], 16);
-        }
+            Offsets.dwClientState = Convert.ToInt32(dic["dwClientState"], 16); ;
+            Offsets.dwClientState_State = Convert.ToInt32(dic["dwClientState_State"],16);
+    }
         private Dictionary<string,string> Parse(string url) 
         {
             try
@@ -123,25 +158,25 @@ namespace MyPrroj
                     {
                         using (HttpResponseMessage response = client.GetAsync(url).Result) 
                         {
-                            if (response.IsSuccessStatusCode) 
+                            if (response.IsSuccessStatusCode)
                             {
                                 var html = response.Content.ReadAsStringAsync().Result;
-                                if(!string.IsNullOrEmpty(html))
+                                if (!string.IsNullOrEmpty(html))
                                 {
                                     var htmlDoc = new HtmlDocument();
                                     htmlDoc.LoadHtml(html);
-                                    if (htmlDoc != null) 
+                                    if (htmlDoc != null)
                                     {
                                         var doc = htmlDoc.DocumentNode.SelectSingleNode(".//table[@class='highlight tab-size js-file-line-container js-code-nav-container js-tagsearch-file']");
-                                        if (doc != null) 
+                                        if (doc != null)
                                         {
                                             var line = doc.SelectNodes(".//tr");
-                                            if (line != null && line.Count > 0) 
+                                            if (line != null && line.Count > 0)
                                             {
                                                 foreach (var item in line)
                                                 {
                                                     var value = item.SelectSingleNode(".//td[@class='blob-code blob-code-inner js-file-line']");
-                                                    if (value != null) 
+                                                    if (value != null)
                                                     {
                                                         var name = value.SelectNodes(".//span[@class='pl-en']");
                                                         var currentValue = value.SelectNodes(".//span[@class='pl-c1']");
@@ -149,7 +184,7 @@ namespace MyPrroj
                                                         {
                                                             foreach (var i in name)
                                                             {
-                                                                if (i.InnerText == "dwLocalPlayer" | i.InnerText == "m_iTeamNum" | i.InnerText == "dwGlowObjectManager" | i.InnerText == "dwEntityList"| i.InnerText == "m_iGlowIndex")
+                                                                if (i.InnerText == "dwLocalPlayer" | i.InnerText == "m_iTeamNum" | i.InnerText == "dwGlowObjectManager" | i.InnerText == "dwEntityList" | i.InnerText == "m_iGlowIndex"| i.InnerText == "dwClientState"| i.InnerText== "dwClientState_State")
                                                                 {
                                                                     foreach (var cur in currentValue)
                                                                     {
