@@ -6,8 +6,7 @@ using System.Net;
 using System.Net.Http;
 using HtmlAgilityPack;
 using System.Collections.Generic;
-using System.Linq;
-using System.IO;
+
 
 
 namespace MyPrroj
@@ -24,6 +23,7 @@ namespace MyPrroj
         {
             InitializeComponent();
             Hex(Parse(Url));
+            this.Closed += MainWindow_OnClosed;
         }
 
         //Поиск процессов и модулей, начальная точка входа в бесконечный цикл
@@ -48,6 +48,7 @@ namespace MyPrroj
                 }
                         if (myClient != 0) 
                         {
+                            MessageBox.Show("Chlenix On!");
                             flag = true;
                             Esp();
                         }
@@ -76,8 +77,6 @@ namespace MyPrroj
         }
         #endregion State 
 
-
-
         private void Esp() // Отрисовка объектов
         {
             new Thread(() =>
@@ -95,7 +94,12 @@ namespace MyPrroj
                         int playrTeam = m.Read<int>(lPlayer + Offsets.m_iTeamNum);
                         int glow = m.Read<int>(myClient + Offsets.dwGlowObjectManager);
 
-
+                        int flashDur = 0;
+                        flashDur = m.Read<int>(lPlayer + Offsets.m_flFlashDuration);
+                        if (flashDur > 0) 
+                        {
+                            m.Write(lPlayer + Offsets.m_flFlashDuration, 0);
+                        }
                         for (int i = 1; i < 32; i++)
                         {
                             int entity = m.Read<int>(myClient + Offsets.dwEntityList + i * 0x10);
@@ -117,14 +121,19 @@ namespace MyPrroj
                     }
                 }
             }).Start();
-        } 
+        }
 
-        //Отключение Esp
+        #region EspOff
         private void btnReturn_Click(object sender, RoutedEventArgs e)
+        {
+            MessageBox.Show("Chlenix Off!");
+            flag = false;
+        }
+        private void MainWindow_OnClosed(object sender, EventArgs e) 
         {
             flag = false;
         }
-
+        #endregion EspOff
 
         #region Offsets
         struct Offsets 
@@ -136,6 +145,7 @@ namespace MyPrroj
             public static Int32 m_iGlowIndex;
             public static Int32 dwClientState;
             public static Int32 dwClientState_State;
+            public static Int32 m_flFlashDuration;
         }
         private void Hex(Dictionary<string, string> dic) 
         {
@@ -146,6 +156,7 @@ namespace MyPrroj
             Offsets.m_iTeamNum = Convert.ToInt32(dic["m_iTeamNum"], 16);
             Offsets.dwClientState = Convert.ToInt32(dic["dwClientState"], 16); ;
             Offsets.dwClientState_State = Convert.ToInt32(dic["dwClientState_State"],16);
+            Offsets.m_flFlashDuration = Convert.ToInt32(dic["m_flFlashDuration"], 16);
     }
         private Dictionary<string,string> Parse(string url) 
         {
@@ -184,7 +195,8 @@ namespace MyPrroj
                                                         {
                                                             foreach (var i in name)
                                                             {
-                                                                if (i.InnerText == "dwLocalPlayer" | i.InnerText == "m_iTeamNum" | i.InnerText == "dwGlowObjectManager" | i.InnerText == "dwEntityList" | i.InnerText == "m_iGlowIndex"| i.InnerText == "dwClientState"| i.InnerText== "dwClientState_State")
+                                                                if (i.InnerText == "dwLocalPlayer" | i.InnerText == "m_iTeamNum" | i.InnerText == "dwGlowObjectManager" | i.InnerText == "dwEntityList"
+                                                                    | i.InnerText == "m_iGlowIndex"| i.InnerText == "dwClientState"| i.InnerText== "dwClientState_State" | i.InnerText == "m_flFlashDuration")
                                                                 {
                                                                     foreach (var cur in currentValue)
                                                                     {
